@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useFasting } from '@/hooks/useFasting';
 import { CircularProgress } from '@/components/CircularProgress';
 import { GoalSelector } from '@/components/GoalSelector';
 import { StatsView } from '@/components/StatsView';
 import { FastingHistory } from '@/components/FastingHistory';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Play, Square, Timer, BarChart3, History } from 'lucide-react';
@@ -13,12 +15,27 @@ const Index = () => {
     isActive,
     goalHours,
     sessions,
+    weightEntries,
     elapsedTime,
     progress,
     startFasting,
     stopFasting,
     setGoal,
+    clearHistory,
+    addWeightEntry,
+    clearWeightEntries,
   } = useFasting();
+
+  const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
+
+  const handleStopClick = () => {
+    setStopConfirmOpen(true);
+  };
+
+  const handleConfirmStop = () => {
+    stopFasting();
+    setStopConfirmOpen(false);
+  };
 
   return (
     <>
@@ -94,7 +111,7 @@ const Index = () => {
                     variant="destructive"
                     size="xl"
                     className="w-full"
-                    onClick={stopFasting}
+                    onClick={handleStopClick}
                   >
                     <Square className="w-5 h-5 mr-2" />
                     End Fast
@@ -113,8 +130,14 @@ const Index = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="stats" className="flex-1 mt-0">
-              <StatsView sessions={sessions} />
+            <TabsContent value="stats" className="flex-1 mt-0 overflow-auto">
+              <StatsView 
+                sessions={sessions}
+                weightEntries={weightEntries}
+                onAddWeightEntry={addWeightEntry}
+                onClearHistory={clearHistory}
+                onClearWeightEntries={clearWeightEntries}
+              />
             </TabsContent>
 
             <TabsContent value="history" className="flex-1 mt-0 overflow-auto">
@@ -123,6 +146,17 @@ const Index = () => {
           </Tabs>
         </div>
       </main>
+
+      {/* Stop Confirmation Dialog */}
+      <ConfirmDialog
+        open={stopConfirmOpen}
+        onOpenChange={setStopConfirmOpen}
+        title="End Fast?"
+        description="Are you sure you want to end your current fast? This action cannot be undone."
+        confirmText="Yes, End Fast"
+        variant="destructive"
+        onConfirm={handleConfirmStop}
+      />
     </>
   );
 };

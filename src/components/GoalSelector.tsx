@@ -14,6 +14,9 @@ const FASTING_GOALS = [
   { hours: 18, label: '18:6', description: 'Moderate' },
   { hours: 20, label: '20:4', description: 'Warrior' },
   { hours: 24, label: '24:0', description: 'OMAD' },
+  { hours: 36, label: '36h', description: 'Extended' },
+  { hours: 48, label: '48h', description: '2-Day' },
+  { hours: 72, label: '72h', description: '3-Day' },
 ];
 
 export const GoalSelector = ({ 

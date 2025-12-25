@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { WeightEntry } from '@/components/WeightTracker';
 
 export interface FastingSession {
   id: string;
@@ -13,6 +14,7 @@ interface FastingState {
   startTime: number | null;
   goalHours: number;
   sessions: FastingSession[];
+  weightEntries: WeightEntry[];
 }
 
 const STORAGE_KEY = 'fasting-tracker-state';
@@ -21,7 +23,12 @@ const getStoredState = (): FastingState => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      // Ensure weightEntries exists for backward compatibility
+      return {
+        ...parsed,
+        weightEntries: parsed.weightEntries || [],
+      };
     }
   } catch (e) {
     console.error('Error reading from localStorage:', e);
@@ -31,6 +38,7 @@ const getStoredState = (): FastingState => {
     startTime: null,
     goalHours: 16,
     sessions: [],
+    weightEntries: [],
   };
 };
 
@@ -76,15 +84,20 @@ export const useFasting = () => {
     }));
   }, []);
 
+  // Note: We NO LONGER auto-complete at goal. User must explicitly stop.
+  // The 'completed' flag is set based on whether elapsed >= goal at stop time.
   const stopFasting = useCallback(() => {
     if (!state.startTime) return;
 
+    const endTime = Date.now();
+    const duration = endTime - state.startTime;
+    
     const session: FastingSession = {
       id: crypto.randomUUID(),
       startTime: state.startTime,
-      endTime: Date.now(),
+      endTime,
       goalHours: state.goalHours,
-      completed: elapsedTime >= state.goalHours * 60 * 60 * 1000,
+      completed: duration >= state.goalHours * 60 * 60 * 1000,
     };
 
     setState(prev => ({
@@ -93,7 +106,7 @@ export const useFasting = () => {
       startTime: null,
       sessions: [session, ...prev.sessions],
     }));
-  }, [state.startTime, state.goalHours, elapsedTime]);
+  }, [state.startTime, state.goalHours]);
 
   const setGoal = useCallback((hours: number) => {
     setState(prev => ({ ...prev, goalHours: hours }));
@@ -103,20 +116,53 @@ export const useFasting = () => {
     setState(prev => ({ ...prev, sessions: [] }));
   }, []);
 
-  const progress = state.isActive && state.startTime
-    ? Math.min((elapsedTime / (state.goalHours * 60 * 60 * 1000)) * 100, 100)
+  const deleteSession = useCallback((sessionId: string) => {
+    setState(prev => ({
+      ...prev,
+      sessions: prev.sessions.filter(s => s.id !== sessionId),
+    }));
+  }, []);
+
+  const addWeightEntry = useCallback((entry: Omit<WeightEntry, 'id' | 'date'>) => {
+    const newEntry: WeightEntry = {
+      id: crypto.randomUUID(),
+      date: Date.now(),
+      ...entry,
+    };
+    setState(prev => ({
+      ...prev,
+      weightEntries: [newEntry, ...prev.weightEntries],
+    }));
+  }, []);
+
+  const clearWeightEntries = useCallback(() => {
+    setState(prev => ({ ...prev, weightEntries: [] }));
+  }, []);
+
+  // Progress is calculated but we allow it to go beyond 100%
+  // For display, we cap at 100 for the circle, but show actual time
+  const rawProgress = state.isActive && state.startTime
+    ? (elapsedTime / (state.goalHours * 60 * 60 * 1000)) * 100
     : 0;
+  
+  // Capped progress for the visual circle (max 100%)
+  const progress = Math.min(rawProgress, 100);
 
   return {
     isActive: state.isActive,
     startTime: state.startTime,
     goalHours: state.goalHours,
     sessions: state.sessions,
+    weightEntries: state.weightEntries,
     elapsedTime,
     progress,
+    rawProgress,
     startFasting,
     stopFasting,
     setGoal,
     clearHistory,
+    deleteSession,
+    addWeightEntry,
+    clearWeightEntries,
   };
 };
