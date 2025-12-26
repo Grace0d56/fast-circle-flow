@@ -22,7 +22,11 @@ const Index = () => {
     startFasting,
     stopFasting,
     clearHistory,
+    deleteSession,
+    updateSession,
     addWeightEntry,
+    updateWeightEntry,
+    deleteWeightEntry,
     clearWeightEntries,
   } = useFasting();
 
@@ -57,37 +61,37 @@ const Index = () => {
         <ThemeSwitcher />
 
         {/* Header */}
-        <header className="pt-safe px-4 py-6">
+        <header className="pt-safe px-4 py-4">
           <div className="flex items-center justify-center gap-2">
-            <Timer className="w-6 h-6 text-primary" />
-            <h1 className="font-display text-xl font-bold gradient-text">FastTrack</h1>
+            <Timer className="w-5 h-5 text-primary" />
+            <h1 className="font-display text-lg font-bold gradient-text">FastTrack</h1>
           </div>
         </header>
 
         {/* Main content */}
-        <div className="flex-1 px-4 pb-4">
-          <Tabs defaultValue="timer" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 bg-secondary/50 p-1 rounded-xl mb-6">
+        <div className="flex-1 px-3 sm:px-4 pb-4 flex flex-col">
+          <Tabs defaultValue="timer" className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-3 bg-secondary/50 p-1 rounded-xl mb-4">
               <TabsTrigger 
                 value="timer" 
-                className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center gap-2"
+                className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm py-2"
               >
                 <Timer className="w-4 h-4" />
-                <span className="hidden sm:inline">Timer</span>
+                <span>Timer</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="stats"
-                className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center gap-2"
+                className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm py-2"
               >
                 <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Stats</span>
+                <span>Stats</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="history"
-                className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center gap-2"
+                className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm py-2"
               >
                 <History className="w-4 h-4" />
-                <span className="hidden sm:inline">History</span>
+                <span>History</span>
               </TabsTrigger>
             </TabsList>
 
@@ -95,7 +99,7 @@ const Index = () => {
               {isActive ? (
                 <>
                   {/* Circular Timer */}
-                  <div className="flex-1 flex items-center justify-center">
+                  <div className="flex-1 flex items-center justify-center py-4">
                     <CircularProgress
                       progress={progress}
                       elapsedTime={elapsedTime}
@@ -104,15 +108,15 @@ const Index = () => {
                     />
                   </div>
 
-                  {/* Stop Button */}
-                  <div className="w-full max-w-sm pb-safe">
+                  {/* Stop Button - with more space from circle */}
+                  <div className="w-full max-w-sm pb-safe mt-6">
                     <Button
                       variant="destructive"
-                      size="xl"
-                      className="w-full"
+                      size="lg"
+                      className="w-full h-12 text-base font-medium"
                       onClick={handleStopClick}
                     >
-                      <Square className="w-5 h-5 mr-2" />
+                      <Square className="w-4 h-4 mr-2" />
                       End Fast
                     </Button>
                   </div>
@@ -120,7 +124,7 @@ const Index = () => {
               ) : (
                 <>
                   {/* Idle State Circle */}
-                  <div className="flex-1 flex items-center justify-center">
+                  <div className="flex-1 flex items-center justify-center py-4">
                     <CircularProgress
                       progress={0}
                       elapsedTime={0}
@@ -140,18 +144,24 @@ const Index = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="stats" className="flex-1 mt-0 overflow-auto">
+            <TabsContent value="stats" className="flex-1 mt-0 overflow-auto -mx-1 px-1">
               <StatsView 
                 sessions={sessions}
                 weightEntries={weightEntries}
                 onAddWeightEntry={addWeightEntry}
+                onUpdateWeightEntry={updateWeightEntry}
+                onDeleteWeightEntry={deleteWeightEntry}
                 onClearHistory={clearHistory}
                 onClearWeightEntries={clearWeightEntries}
               />
             </TabsContent>
 
-            <TabsContent value="history" className="flex-1 mt-0 overflow-auto">
-              <FastingHistory sessions={sessions} />
+            <TabsContent value="history" className="flex-1 mt-0 overflow-auto -mx-1 px-1">
+              <FastingHistory 
+                sessions={sessions}
+                onUpdateSession={updateSession}
+                onDeleteSession={deleteSession}
+              />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,102 +1,120 @@
-// Conservative fat burning estimation for fasting
-// Based on research from: Nature Communications (2024), Cambridge studies
-// For normal-weight females in healthy conditions
-// 
-// Scientific basis:
-// - Resting metabolic rate (RMR): ~1400 kcal/day for average female
-// - During fasting after ketosis (~16h), ~60-80% of energy from fat
-// - 1g fat = 9 kcal
-// - Conservative estimate: ~0.5-1g fat/hour during active ketosis
-// 
-// We use CONSERVATIVE estimates (lower bound) to keep users motivated
+// Katch-McArdle based fat burning estimation for fasting
+// Based on: https://docs.lovable.dev formula spec
+// Using conservative estimates for motivation
+
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'very_plus';
 
 export interface FatBurnEstimate {
   totalGrams: number;
+  caloriesBurned: number;
   ketosisHours: number;
   estimationType: 'none' | 'light' | 'moderate' | 'heavy';
+  range?: {
+    low: number;
+    high: number;
+  };
 }
 
-// Conservative fat burning rates (grams per hour)
-// Based on normal-weight female, healthy conditions
-const FAT_BURN_RATES = {
-  preKetosis: 0.1,      // 0-12h: minimal fat burning, mostly glycogen
-  earlyKetosis: 0.3,    // 12-16h: transitioning to fat burning
-  activeKetosis: 0.5,   // 16-24h: active fat burning
-  deepKetosis: 0.6,     // 24-48h: enhanced fat oxidation
-  peakKetosis: 0.7,     // 48h+: peak fat burning
+// Constants
+const K_FAT_KCAL_PER_KG = 7700;
+const E_RMR = 0.10; // ±10% uncertainty
+
+// Activity multipliers during fast
+const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
+  sedentary: 1.00,
+  light: 1.15,
+  moderate: 1.30,
+  very_plus: 1.45,
 };
 
-export const estimateFatBurned = (durationMs: number): FatBurnEstimate => {
+// Fasting fat fraction based on hours
+const getFastingFatFraction = (hours: number): number => {
+  if (hours < 12) return 0.55;
+  if (hours < 24) return 0.70;
+  if (hours < 36) return 0.80;
+  if (hours < 60) return 0.85;
+  return 0.90;
+};
+
+// Default values for normal-weight female if not provided
+const DEFAULT_WEIGHT_KG = 58;
+const DEFAULT_BODY_FAT_PCT = 25;
+
+export interface FatBurnOptions {
+  weightKg?: number;
+  bodyFatPct?: number;
+  activityLevel?: ActivityLevel;
+}
+
+export const estimateFatBurned = (
+  durationMs: number,
+  options?: FatBurnOptions
+): FatBurnEstimate => {
   const hours = durationMs / (1000 * 60 * 60);
   
-  if (hours < 4) {
-    return { totalGrams: 0, ketosisHours: 0, estimationType: 'none' };
+  if (hours <= 0) {
+    return { totalGrams: 0, caloriesBurned: 0, ketosisHours: 0, estimationType: 'none' };
   }
-  
-  let totalGrams = 0;
-  
-  // Calculate fat burned in each phase
-  if (hours >= 4) {
-    // Pre-ketosis phase (4-12h)
-    const preKetosisHours = Math.min(hours, 12) - 4;
-    if (preKetosisHours > 0) {
-      totalGrams += preKetosisHours * FAT_BURN_RATES.preKetosis;
-    }
-  }
-  
-  if (hours >= 12) {
-    // Early ketosis (12-16h)
-    const earlyKetosisHours = Math.min(hours, 16) - 12;
-    if (earlyKetosisHours > 0) {
-      totalGrams += earlyKetosisHours * FAT_BURN_RATES.earlyKetosis;
-    }
-  }
-  
-  if (hours >= 16) {
-    // Active ketosis (16-24h)
-    const activeKetosisHours = Math.min(hours, 24) - 16;
-    if (activeKetosisHours > 0) {
-      totalGrams += activeKetosisHours * FAT_BURN_RATES.activeKetosis;
-    }
-  }
-  
-  if (hours >= 24) {
-    // Deep ketosis (24-48h)
-    const deepKetosisHours = Math.min(hours, 48) - 24;
-    if (deepKetosisHours > 0) {
-      totalGrams += deepKetosisHours * FAT_BURN_RATES.deepKetosis;
-    }
-  }
-  
-  if (hours >= 48) {
-    // Peak ketosis (48h+)
-    const peakKetosisHours = hours - 48;
-    totalGrams += peakKetosisHours * FAT_BURN_RATES.peakKetosis;
-  }
-  
-  // Calculate ketosis hours (time after 16h mark)
-  const ketosisHours = Math.max(0, hours - 16);
-  
+
+  const weightKg = options?.weightKg || DEFAULT_WEIGHT_KG;
+  const bodyFatPct = Math.min(Math.max(options?.bodyFatPct || DEFAULT_BODY_FAT_PCT, 0), 70);
+  const activityLevel = options?.activityLevel || 'sedentary';
+
+  // Calculate Lean Body Mass
+  const lbmKg = weightKg * (1 - bodyFatPct / 100);
+
+  // Get activity multiplier
+  const m = ACTIVITY_MULTIPLIERS[activityLevel];
+
+  // Calculate RMR using Katch-McArdle formula
+  const rmrDayKcal = 370 + 21.6 * lbmKg;
+
+  // Get fasting fat fraction
+  const fFast = getFastingFatFraction(hours);
+
+  // Calculate calories burned during the fasting window
+  const caloriesKcal = rmrDayKcal * m * (hours / 24);
+
+  // Calculate fat burned
+  const fatKcal = caloriesKcal * fFast;
+  const fatKg = fatKcal / K_FAT_KCAL_PER_KG;
+  const fatGrams = fatKg * 1000;
+
+  // Calculate range with ±10% RMR uncertainty
+  const caloriesLow = (rmrDayKcal * (1 - E_RMR)) * m * (hours / 24);
+  const caloriesHigh = (rmrDayKcal * (1 + E_RMR)) * m * (hours / 24);
+  const fatGramsLow = (caloriesLow * fFast / K_FAT_KCAL_PER_KG) * 1000;
+  const fatGramsHigh = (caloriesHigh * fFast / K_FAT_KCAL_PER_KG) * 1000;
+
+  // Calculate ketosis hours (time after 12h mark when fat burning increases)
+  const ketosisHours = Math.max(0, hours - 12);
+
   // Determine estimation type
   let estimationType: FatBurnEstimate['estimationType'] = 'none';
-  if (totalGrams >= 10) estimationType = 'heavy';
-  else if (totalGrams >= 5) estimationType = 'moderate';
-  else if (totalGrams > 0) estimationType = 'light';
-  
+  if (fatGrams >= 30) estimationType = 'heavy';
+  else if (fatGrams >= 15) estimationType = 'moderate';
+  else if (fatGrams > 0) estimationType = 'light';
+
   return {
-    totalGrams: Math.round(totalGrams * 10) / 10,
+    totalGrams: Math.round(fatGrams * 10) / 10,
+    caloriesBurned: Math.round(caloriesKcal),
     ketosisHours: Math.round(ketosisHours * 10) / 10,
     estimationType,
+    range: {
+      low: Math.round(fatGramsLow * 10) / 10,
+      high: Math.round(fatGramsHigh * 10) / 10,
+    },
   };
 };
 
 // Calculate total fat burned from all sessions
 export const calculateTotalFatBurned = (
-  sessions: { startTime: number; endTime: number | null }[]
+  sessions: { startTime: number; endTime: number | null }[],
+  options?: FatBurnOptions
 ): number => {
   return sessions.reduce((total, session) => {
     if (!session.endTime) return total;
     const duration = session.endTime - session.startTime;
-    return total + estimateFatBurned(duration).totalGrams;
+    return total + estimateFatBurned(duration, options).totalGrams;
   }, 0);
 };

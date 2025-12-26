@@ -11,16 +11,17 @@ export interface WeightEntry {
   id: string;
   date: number;
   weight: number;
-  fatMass?: number;
   fatPercentage?: number;
 }
 
 interface WeightTrackerProps {
   entries: WeightEntry[];
   onAddEntry: (entry: Omit<WeightEntry, 'id' | 'date'>) => void;
+  onUpdateEntry?: (entryId: string, updates: Partial<Omit<WeightEntry, 'id'>>) => void;
+  onDeleteEntry?: (entryId: string) => void;
 }
 
-export const WeightTracker = ({ entries, onAddEntry }: WeightTrackerProps) => {
+export const WeightTracker = ({ entries, onAddEntry, onUpdateEntry, onDeleteEntry }: WeightTrackerProps) => {
   const [open, setOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [weight, setWeight] = useState('');
@@ -57,10 +58,10 @@ export const WeightTracker = ({ entries, onAddEntry }: WeightTrackerProps) => {
   return (
     <>
       <div 
-        className="glass rounded-xl p-4 cursor-pointer hover:bg-card/80 transition-colors"
+        className="glass rounded-xl p-4 cursor-pointer hover:bg-card/80 transition-colors active:scale-[0.98]"
         onClick={() => setDetailOpen(true)}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Scale className="w-5 h-5 text-primary" />
             <h3 className="font-medium text-foreground">Weight Tracker</h3>
@@ -91,7 +92,7 @@ export const WeightTracker = ({ entries, onAddEntry }: WeightTrackerProps) => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="fatPercentage">Body Fat % - Optional</Label>
+                    <Label htmlFor="fatPercentage">Body Fat % (optional)</Label>
                     <Input
                       id="fatPercentage"
                       type="number"
@@ -112,26 +113,26 @@ export const WeightTracker = ({ entries, onAddEntry }: WeightTrackerProps) => {
         </div>
 
         {latestEntry ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-end gap-2">
-              <span className="text-3xl font-display font-bold text-foreground">
+              <span className="text-2xl font-display font-bold text-foreground">
                 {latestEntry.weight}
               </span>
-              <span className="text-muted-foreground mb-1">kg</span>
+              <span className="text-muted-foreground mb-0.5">kg</span>
               {getTrendIcon()}
               {weightChange !== null && weightChange !== 0 && (
-                <span className={`text-sm mb-1 ${weightChange < 0 ? 'text-success' : 'text-warning'}`}>
+                <span className={`text-sm mb-0.5 ${weightChange < 0 ? 'text-success' : 'text-warning'}`}>
                   {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)}
                 </span>
               )}
             </div>
             {latestEntry.fatPercentage && (
-              <div className="flex gap-4 text-sm text-muted-foreground">
-                <span>Body Fat: {latestEntry.fatPercentage}%</span>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Body Fat: {latestEntry.fatPercentage}%
+              </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Last updated: {formatDate(latestEntry.date)}
+            <p className="text-xs text-muted-foreground/70">
+              Updated: {formatDate(latestEntry.date)}
             </p>
           </div>
         ) : (
@@ -141,7 +142,7 @@ export const WeightTracker = ({ entries, onAddEntry }: WeightTrackerProps) => {
         )}
 
         {entries.length > 0 && (
-          <p className="text-xs text-primary mt-3">Tap to view trends →</p>
+          <p className="text-xs text-primary mt-2">Tap to view trends →</p>
         )}
       </div>
 
@@ -149,6 +150,8 @@ export const WeightTracker = ({ entries, onAddEntry }: WeightTrackerProps) => {
         entries={entries}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+        onUpdateEntry={onUpdateEntry}
+        onDeleteEntry={onDeleteEntry}
       />
     </>
   );
