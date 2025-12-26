@@ -125,6 +125,19 @@ export const useFasting = () => {
     }));
   }, []);
 
+  const updateSession = useCallback((sessionId: string, updates: Partial<Omit<FastingSession, 'id'>>) => {
+    setState(prev => ({
+      ...prev,
+      sessions: prev.sessions.map(s => 
+        s.id === sessionId 
+          ? { ...s, ...updates, completed: updates.endTime && updates.startTime !== undefined 
+              ? (updates.endTime - (updates.startTime ?? s.startTime)) >= s.goalHours * 60 * 60 * 1000
+              : s.completed }
+          : s
+      ),
+    }));
+  }, []);
+
   const addWeightEntry = useCallback((entry: Omit<WeightEntry, 'id' | 'date'>) => {
     const newEntry: WeightEntry = {
       id: crypto.randomUUID(),
@@ -134,6 +147,22 @@ export const useFasting = () => {
     setState(prev => ({
       ...prev,
       weightEntries: [newEntry, ...prev.weightEntries],
+    }));
+  }, []);
+
+  const updateWeightEntry = useCallback((entryId: string, updates: Partial<Omit<WeightEntry, 'id'>>) => {
+    setState(prev => ({
+      ...prev,
+      weightEntries: prev.weightEntries.map(e =>
+        e.id === entryId ? { ...e, ...updates } : e
+      ),
+    }));
+  }, []);
+
+  const deleteWeightEntry = useCallback((entryId: string) => {
+    setState(prev => ({
+      ...prev,
+      weightEntries: prev.weightEntries.filter(e => e.id !== entryId),
     }));
   }, []);
 
@@ -164,7 +193,10 @@ export const useFasting = () => {
     setGoal,
     clearHistory,
     deleteSession,
+    updateSession,
     addWeightEntry,
+    updateWeightEntry,
+    deleteWeightEntry,
     clearWeightEntries,
   };
 };

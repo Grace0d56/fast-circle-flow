@@ -11,6 +11,8 @@ interface StatsViewProps {
   sessions: FastingSession[];
   weightEntries: WeightEntry[];
   onAddWeightEntry: (entry: Omit<WeightEntry, 'id' | 'date'>) => void;
+  onUpdateWeightEntry?: (entryId: string, updates: Partial<Omit<WeightEntry, 'id'>>) => void;
+  onDeleteWeightEntry?: (entryId: string) => void;
   onClearHistory: () => void;
   onClearWeightEntries: () => void;
 }
@@ -21,6 +23,8 @@ export const StatsView = ({
   sessions, 
   weightEntries,
   onAddWeightEntry,
+  onUpdateWeightEntry,
+  onDeleteWeightEntry,
   onClearHistory,
   onClearWeightEntries,
 }: StatsViewProps) => {
@@ -29,8 +33,17 @@ export const StatsView = ({
   const [clearWeightOpen, setClearWeightOpen] = useState(false);
   
   const stats = calculateStats(sessions, period);
+  
+  // Get latest weight/body fat for better fat estimation
+  const latestWeight = weightEntries[0];
+  const fatBurnOptions = latestWeight ? {
+    weightKg: latestWeight.weight,
+    bodyFatPct: latestWeight.fatPercentage,
+  } : undefined;
+  
   const totalFatBurned = calculateTotalFatBurned(
-    sessions.filter(s => s.endTime !== null)
+    sessions.filter(s => s.endTime !== null),
+    fatBurnOptions
   );
 
   const periods: { value: Period; label: string }[] = [
@@ -66,14 +79,14 @@ export const StatsView = ({
       icon: Flame, 
       label: 'Streak', 
       value: stats.currentStreak,
-      subValue: 'completed in a row',
+      subValue: 'in a row',
       color: 'text-success' 
     },
     {
       icon: Scale,
       label: 'Fat Burned',
       value: `~${Math.round(totalFatBurned)}g`,
-      subValue: 'conservative estimate',
+      subValue: 'estimated total',
       color: 'text-warning'
     },
   ];
@@ -81,14 +94,14 @@ export const StatsView = ({
   return (
     <div className="space-y-4">
       {/* Period selector */}
-      <div className="flex gap-2 justify-center">
+      <div className="flex gap-1.5 justify-center">
         {periods.map(({ value, label }) => (
           <Button
             key={value}
             variant={period === value ? 'default' : 'glass'}
             size="sm"
             onClick={() => setPeriod(value)}
-            className="min-w-[60px]"
+            className="min-w-[50px] px-3 text-xs sm:text-sm"
           >
             {label}
           </Button>
@@ -96,22 +109,22 @@ export const StatsView = ({
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {statCards.map((stat, index) => (
           <div
             key={stat.label}
-            className={`glass rounded-xl p-4 animate-fade-in-up ${
+            className={`glass rounded-xl p-3 sm:p-4 animate-fade-in-up ${
               index === statCards.length - 1 && statCards.length % 2 === 1 ? 'col-span-2' : ''
             }`}
           >
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-1.5 mb-1.5">
               <stat.icon className={`w-4 h-4 ${stat.color}`} />
-              <span className="text-sm text-muted-foreground">{stat.label}</span>
+              <span className="text-xs text-muted-foreground">{stat.label}</span>
             </div>
-            <p className="text-2xl font-display font-bold text-foreground">
+            <p className="text-xl sm:text-2xl font-display font-bold text-foreground">
               {stat.value}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">{stat.subValue}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{stat.subValue}</p>
           </div>
         ))}
       </div>
@@ -120,11 +133,13 @@ export const StatsView = ({
       <WeightTracker 
         entries={weightEntries} 
         onAddEntry={onAddWeightEntry}
+        onUpdateEntry={onUpdateWeightEntry}
+        onDeleteEntry={onDeleteWeightEntry}
       />
 
       {/* Clear Data */}
       <div className="glass rounded-xl p-4 space-y-3">
-        <h3 className="font-medium text-foreground flex items-center gap-2">
+        <h3 className="font-medium text-foreground flex items-center gap-2 text-sm">
           <Trash2 className="w-4 h-4 text-destructive" />
           Clear Data
         </h3>
@@ -134,18 +149,18 @@ export const StatsView = ({
             size="sm"
             onClick={() => setClearHistoryOpen(true)}
             disabled={sessions.length === 0}
-            className="flex-1"
+            className="flex-1 text-xs"
           >
-            Clear Fasting History
+            Clear Fasting
           </Button>
           <Button
             variant="glass"
             size="sm"
             onClick={() => setClearWeightOpen(true)}
             disabled={weightEntries.length === 0}
-            className="flex-1"
+            className="flex-1 text-xs"
           >
-            Clear Weight Data
+            Clear Weight
           </Button>
         </div>
       </div>
@@ -156,7 +171,7 @@ export const StatsView = ({
         onOpenChange={setClearHistoryOpen}
         title="Clear Fasting History?"
         description="This will permanently delete all your fasting sessions. This action cannot be undone."
-        confirmText="Yes, Clear History"
+        confirmText="Yes, Clear"
         variant="destructive"
         onConfirm={() => {
           onClearHistory();
@@ -169,7 +184,7 @@ export const StatsView = ({
         onOpenChange={setClearWeightOpen}
         title="Clear Weight Data?"
         description="This will permanently delete all your weight entries. This action cannot be undone."
-        confirmText="Yes, Clear Data"
+        confirmText="Yes, Clear"
         variant="destructive"
         onConfirm={() => {
           onClearWeightEntries();
