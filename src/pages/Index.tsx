@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useFasting } from '@/hooks/useFasting';
 import { CircularProgress } from '@/components/CircularProgress';
-import { GoalSelector } from '@/components/GoalSelector';
+import { GoalInput } from '@/components/GoalInput';
 import { StatsView } from '@/components/StatsView';
 import { FastingHistory } from '@/components/FastingHistory';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Play, Square, Timer, BarChart3, History } from 'lucide-react';
+import { Square, Timer, BarChart3, History } from 'lucide-react';
 
 const Index = () => {
   const {
@@ -20,7 +21,6 @@ const Index = () => {
     progress,
     startFasting,
     stopFasting,
-    setGoal,
     clearHistory,
     addWeightEntry,
     clearWeightEntries,
@@ -37,6 +37,10 @@ const Index = () => {
     setStopConfirmOpen(false);
   };
 
+  const handleStartFasting = (goal: number, lastMealTime: Date) => {
+    startFasting(goal, lastMealTime);
+  };
+
   return (
     <>
       <Helmet>
@@ -48,7 +52,10 @@ const Index = () => {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </Helmet>
 
-      <main className="min-h-screen bg-background flex flex-col">
+      <main className="min-h-screen bg-background flex flex-col relative">
+        {/* Theme Switcher */}
+        <ThemeSwitcher />
+
         {/* Header */}
         <header className="pt-safe px-4 py-6">
           <div className="flex items-center justify-center gap-2">
@@ -85,49 +92,52 @@ const Index = () => {
             </TabsList>
 
             <TabsContent value="timer" className="flex-1 flex flex-col items-center mt-0">
-              {/* Circular Timer */}
-              <div className="flex-1 flex items-center justify-center">
-                <CircularProgress
-                  progress={progress}
-                  elapsedTime={elapsedTime}
-                  goalHours={goalHours}
-                  isActive={isActive}
-                />
-              </div>
+              {isActive ? (
+                <>
+                  {/* Circular Timer */}
+                  <div className="flex-1 flex items-center justify-center">
+                    <CircularProgress
+                      progress={progress}
+                      elapsedTime={elapsedTime}
+                      goalHours={goalHours}
+                      isActive={isActive}
+                    />
+                  </div>
 
-              {/* Goal Selector */}
-              <div className="w-full max-w-sm mb-6">
-                <GoalSelector
-                  selectedGoal={goalHours}
-                  onSelectGoal={setGoal}
-                  disabled={isActive}
-                />
-              </div>
+                  {/* Stop Button */}
+                  <div className="w-full max-w-sm pb-safe">
+                    <Button
+                      variant="destructive"
+                      size="xl"
+                      className="w-full"
+                      onClick={handleStopClick}
+                    >
+                      <Square className="w-5 h-5 mr-2" />
+                      End Fast
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Idle State Circle */}
+                  <div className="flex-1 flex items-center justify-center">
+                    <CircularProgress
+                      progress={0}
+                      elapsedTime={0}
+                      goalHours={16}
+                      isActive={false}
+                    />
+                  </div>
 
-              {/* Start/Stop Button */}
-              <div className="w-full max-w-sm pb-safe">
-                {isActive ? (
-                  <Button
-                    variant="destructive"
-                    size="xl"
-                    className="w-full"
-                    onClick={handleStopClick}
-                  >
-                    <Square className="w-5 h-5 mr-2" />
-                    End Fast
-                  </Button>
-                ) : (
-                  <Button
-                    variant="glow"
-                    size="xl"
-                    className="w-full"
-                    onClick={() => startFasting(goalHours)}
-                  >
-                    <Play className="w-5 h-5 mr-2" />
-                    Start Fasting
-                  </Button>
-                )}
-              </div>
+                  {/* Goal Input */}
+                  <div className="w-full max-w-sm pb-safe">
+                    <GoalInput
+                      onStart={handleStartFasting}
+                      disabled={isActive}
+                    />
+                  </div>
+                </>
+              )}
             </TabsContent>
 
             <TabsContent value="stats" className="flex-1 mt-0 overflow-auto">

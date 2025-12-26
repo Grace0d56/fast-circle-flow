@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { formatTime } from '@/lib/time';
-import { FASTING_MILESTONES, getMilestoneColor } from '@/lib/milestones';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { FASTING_MILESTONES, getMilestoneColor, FastingMilestone } from '@/lib/milestones';
+import { MilestoneDialog } from './MilestoneDialog';
 
 interface CircularProgressProps {
   progress: number;
@@ -18,6 +18,8 @@ export const CircularProgress = ({
 }: CircularProgressProps) => {
   const { hours, minutes, seconds } = useMemo(() => formatTime(elapsedTime), [elapsedTime]);
   const elapsedHours = elapsedTime / (1000 * 60 * 60);
+  const [selectedMilestone, setSelectedMilestone] = useState<FastingMilestone | null>(null);
+  const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
   
   const radius = 140;
   const strokeWidth = 12;
@@ -45,8 +47,13 @@ export const CircularProgress = ({
     return { x, y, angle };
   };
 
+  const handleMilestoneClick = (milestone: FastingMilestone) => {
+    setSelectedMilestone(milestone);
+    setMilestoneDialogOpen(true);
+  };
+
   return (
-    <TooltipProvider>
+    <>
       <div className="relative flex items-center justify-center">
         {/* Glow effect behind the circle */}
         <div 
@@ -54,7 +61,7 @@ export const CircularProgress = ({
             isActive ? 'opacity-100' : 'opacity-0'
           }`}
           style={{
-            background: 'radial-gradient(circle, hsl(168 84% 44% / 0.2) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%)',
             filter: 'blur(40px)',
           }}
         />
@@ -98,7 +105,7 @@ export const CircularProgress = ({
             className={isActive ? 'drop-shadow-[0_0_8px_hsl(var(--primary))]' : ''}
           />
 
-          {/* Milestone dots */}
+          {/* Milestone dots - clickable */}
           {isActive && relevantMilestones.map((milestone) => {
             const { x, y } = getMilestonePosition(milestone.hours);
             const isReached = elapsedHours >= milestone.hours;
@@ -106,29 +113,20 @@ export const CircularProgress = ({
             
             return (
               <g key={milestone.hours} transform="rotate(90, 140, 140)">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <circle
-                      cx={x}
-                      cy={y}
-                      r={isReached ? 6 : 4}
-                      fill={isReached ? color : 'hsl(var(--secondary))'}
-                      stroke={isReached ? color : 'hsl(var(--muted-foreground))'}
-                      strokeWidth={1}
-                      style={{
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer',
-                        opacity: isReached ? 1 : 0.5,
-                      }}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="bg-card border-border">
-                    <div className="text-xs">
-                      <p className="font-semibold">{milestone.hours}h - {milestone.title}</p>
-                      <p className="text-muted-foreground">{milestone.description}</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={isReached ? 8 : 5}
+                  fill={isReached ? color : 'hsl(var(--secondary))'}
+                  stroke={isReached ? color : 'hsl(var(--muted-foreground))'}
+                  strokeWidth={2}
+                  style={{
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer',
+                    opacity: isReached ? 1 : 0.5,
+                  }}
+                  onClick={() => handleMilestoneClick(milestone)}
+                />
               </g>
             );
           })}
@@ -152,15 +150,25 @@ export const CircularProgress = ({
                   `of ${goalHours}h goal`
                 )}
               </p>
+              <p className="mt-1 text-xs text-muted-foreground/70">
+                Tap dots for milestone info
+              </p>
             </>
           ) : (
             <>
               <p className="text-lg text-muted-foreground mb-1">Ready to fast?</p>
-              <p className="text-sm text-muted-foreground/70">Tap start below</p>
+              <p className="text-sm text-muted-foreground/70">Configure below</p>
             </>
           )}
         </div>
       </div>
-    </TooltipProvider>
+
+      <MilestoneDialog
+        milestone={selectedMilestone}
+        isReached={selectedMilestone ? elapsedHours >= selectedMilestone.hours : false}
+        open={milestoneDialogOpen}
+        onOpenChange={setMilestoneDialogOpen}
+      />
+    </>
   );
 };

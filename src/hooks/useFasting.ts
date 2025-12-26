@@ -75,11 +75,13 @@ export const useFasting = () => {
     saveState(state);
   }, [state]);
 
-  const startFasting = useCallback((goalHours: number) => {
+  // Start fasting with a custom last meal time
+  const startFasting = useCallback((goalHours: number, lastMealTime?: Date) => {
+    const startTime = lastMealTime ? lastMealTime.getTime() : Date.now();
     setState(prev => ({
       ...prev,
       isActive: true,
-      startTime: Date.now(),
+      startTime,
       goalHours,
     }));
   }, []);
