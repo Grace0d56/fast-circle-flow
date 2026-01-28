@@ -14,6 +14,7 @@ import { Square, Timer, BarChart3, History } from 'lucide-react';
 const Index = () => {
   const {
     isActive,
+    startTime,
     goalHours,
     sessions,
     weightEntries,
@@ -72,21 +73,21 @@ const Index = () => {
         <div className="flex-1 px-3 sm:px-4 pb-4 flex flex-col">
           <Tabs defaultValue="timer" className="flex-1 flex flex-col">
             <TabsList className="grid w-full grid-cols-3 bg-secondary/50 p-1 rounded-xl mb-4">
-              <TabsTrigger 
-                value="timer" 
+              <TabsTrigger
+                value="timer"
                 className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm py-2"
               >
                 <Timer className="w-4 h-4" />
                 <span>Timer</span>
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="stats"
                 className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm py-2"
               >
                 <BarChart3 className="w-4 h-4" />
                 <span>Stats</span>
               </TabsTrigger>
-              <TabsTrigger 
+              <TabsTrigger
                 value="history"
                 className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-md flex items-center justify-center gap-1.5 text-xs sm:text-sm py-2"
               >
@@ -105,6 +106,7 @@ const Index = () => {
                       elapsedTime={elapsedTime}
                       goalHours={goalHours}
                       isActive={isActive}
+                      startTime={startTime}
                     />
                   </div>
 
@@ -145,7 +147,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="stats" className="flex-1 mt-0 overflow-auto -mx-1 px-1">
-              <StatsView 
+              <StatsView
                 sessions={sessions}
                 weightEntries={weightEntries}
                 onAddWeightEntry={addWeightEntry}
@@ -157,7 +159,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="history" className="flex-1 mt-0 overflow-auto -mx-1 px-1">
-              <FastingHistory 
+              <FastingHistory
                 sessions={sessions}
                 onUpdateSession={updateSession}
                 onDeleteSession={deleteSession}

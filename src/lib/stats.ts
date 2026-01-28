@@ -12,7 +12,7 @@ export interface FastingStats {
 
 export const calculateStats = (
   sessions: FastingSession[],
-  period: 'week' | 'month' | 'year' | 'all'
+  period: 'week' | 'month' | '3months' | '6months' | 'year' | 'all'
 ): FastingStats => {
   const now = new Date();
   let startDate: Date;
@@ -23,6 +23,12 @@ export const calculateStats = (
       break;
     case 'month':
       startDate = getMonthStart(now);
+      break;
+    case '3months':
+      startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+      break;
+    case '6months':
+      startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
       break;
     case 'year':
       startDate = getYearStart(now);
@@ -48,7 +54,7 @@ export const calculateStats = (
 
   const totalFasts = filteredSessions.length;
   const completedFasts = filteredSessions.filter(s => s.completed).length;
-  
+
   const durations = filteredSessions.map(s => (s.endTime! - s.startTime) / (1000 * 60 * 60));
   const totalHours = durations.reduce((sum, d) => sum + d, 0);
   const averageDuration = totalHours / totalFasts;
@@ -59,7 +65,7 @@ export const calculateStats = (
   const sortedSessions = [...sessions]
     .filter(s => s.endTime)
     .sort((a, b) => b.endTime! - a.endTime!);
-  
+
   for (const session of sortedSessions) {
     if (session.completed) {
       currentStreak++;

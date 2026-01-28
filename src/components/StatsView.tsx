@@ -4,7 +4,7 @@ import { calculateTotalFatBurned } from '@/lib/fatEstimate';
 import { WeightTracker, WeightEntry } from '@/components/WeightTracker';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Flame, Clock, Target, Trophy, Scale, Trash2 } from 'lucide-react';
+import { Flame, Clock, Target, Trophy, Scale, Trash2, Download } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface StatsViewProps {
@@ -17,10 +17,10 @@ interface StatsViewProps {
   onClearWeightEntries: () => void;
 }
 
-type Period = 'week' | 'month' | 'year' | 'all';
+type Period = 'week' | 'month' | '3months' | '6months' | 'year' | 'all';
 
-export const StatsView = ({ 
-  sessions, 
+export const StatsView = ({
+  sessions,
   weightEntries,
   onAddWeightEntry,
   onUpdateWeightEntry,
@@ -31,56 +31,107 @@ export const StatsView = ({
   const [period, setPeriod] = useState<Period>('week');
   const [clearHistoryOpen, setClearHistoryOpen] = useState(false);
   const [clearWeightOpen, setClearWeightOpen] = useState(false);
-  
+
+  // Export data function
+  const handleExportData = () => {
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      appName: 'FastTrack',
+      sessions: sessions,
+      weightEntries: weightEntries,
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `fasttrack-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const stats = calculateStats(sessions, period);
-  
+
   // Get latest weight/body fat for better fat estimation
   const latestWeight = weightEntries[0];
   const fatBurnOptions = latestWeight ? {
     weightKg: latestWeight.weight,
     bodyFatPct: latestWeight.fatPercentage,
   } : undefined;
-  
+
+  // Filter sessions by period for fat calculation
+  const getStartDate = (period: Period): Date => {
+    const now = new Date();
+    switch (period) {
+      case 'week':
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        return weekStart;
+      case 'month':
+        return new Date(now.getFullYear(), now.getMonth(), 1);
+      case '3months':
+        return new Date(now.getFullYear(), now.getMonth() - 3, 1);
+      case '6months':
+        return new Date(now.getFullYear(), now.getMonth() - 6, 1);
+      case 'year':
+        return new Date(now.getFullYear(), 0, 1);
+      default:
+        return new Date(0);
+    }
+  };
+
+  const startDate = getStartDate(period);
+  const filteredSessions = sessions.filter(
+    s => s.endTime !== null && s.endTime >= startDate.getTime()
+  );
+
   const totalFatBurned = calculateTotalFatBurned(
-    sessions.filter(s => s.endTime !== null),
+    filteredSessions,
     fatBurnOptions
   );
 
   const periods: { value: Period; label: string }[] = [
     { value: 'week', label: 'Week' },
     { value: 'month', label: 'Month' },
+    { value: '3months', label: '3 Mon' },
+    { value: '6months', label: '6 Mon' },
     { value: 'year', label: 'Year' },
     { value: 'all', label: 'All' },
   ];
 
   const statCards = [
-    { 
-      icon: Target, 
-      label: 'Fasts', 
+    {
+      icon: Target,
+      label: 'Fasts',
       value: stats.totalFasts,
       subValue: `${stats.completedFasts} completed`,
-      color: 'text-primary' 
+      color: 'text-primary'
     },
-    { 
-      icon: Clock, 
-      label: 'Total Hours', 
+    {
+      icon: Clock,
+      label: 'Total Hours',
       value: stats.totalHours,
       subValue: `${stats.averageDuration}h avg`,
-      color: 'text-primary' 
+      color: 'text-primary'
     },
-    { 
-      icon: Trophy, 
-      label: 'Longest', 
+    {
+      icon: Trophy,
+      label: 'Longest',
       value: `${stats.longestFast}h`,
       subValue: 'personal best',
-      color: 'text-warning' 
+      color: 'text-warning'
     },
-    { 
-      icon: Flame, 
-      label: 'Streak', 
+    {
+      icon: Flame,
+      label: 'Streak',
       value: stats.currentStreak,
       subValue: 'in a row',
-      color: 'text-success' 
+      color: 'text-success'
     },
     {
       icon: Scale,
@@ -113,9 +164,8 @@ export const StatsView = ({
         {statCards.map((stat, index) => (
           <div
             key={stat.label}
-            className={`glass rounded-xl p-3 sm:p-4 animate-fade-in-up ${
-              index === statCards.length - 1 && statCards.length % 2 === 1 ? 'col-span-2' : ''
-            }`}
+            className={`glass rounded-xl p-3 sm:p-4 animate-fade-in-up ${index === statCards.length - 1 && statCards.length % 2 === 1 ? 'col-span-2' : ''
+              }`}
           >
             <div className="flex items-center gap-1.5 mb-1.5">
               <stat.icon className={`w-4 h-4 ${stat.color}`} />
@@ -130,12 +180,32 @@ export const StatsView = ({
       </div>
 
       {/* Weight Tracker */}
-      <WeightTracker 
-        entries={weightEntries} 
+      <WeightTracker
+        entries={weightEntries}
         onAddEntry={onAddWeightEntry}
         onUpdateEntry={onUpdateWeightEntry}
         onDeleteEntry={onDeleteWeightEntry}
       />
+
+      {/* Export Data */}
+      <div className="glass rounded-xl p-4 space-y-3">
+        <h3 className="font-medium text-foreground flex items-center gap-2 text-sm">
+          <Download className="w-4 h-4 text-primary" />
+          Backup Data
+        </h3>
+        <Button
+          variant="glass"
+          size="sm"
+          onClick={handleExportData}
+          disabled={sessions.length === 0 && weightEntries.length === 0}
+          className="w-full text-xs"
+        >
+          Export as JSON
+        </Button>
+        <p className="text-xs text-muted-foreground">
+          Download your fasting history and weight data
+        </p>
+      </div>
 
       {/* Clear Data */}
       <div className="glass rounded-xl p-4 space-y-3">

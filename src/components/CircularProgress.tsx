@@ -8,19 +8,52 @@ interface CircularProgressProps {
   elapsedTime: number;
   goalHours: number;
   isActive: boolean;
+  startTime?: number | null;
 }
 
-export const CircularProgress = ({ 
-  progress, 
-  elapsedTime, 
-  goalHours, 
-  isActive 
+export const CircularProgress = ({
+  progress,
+  elapsedTime,
+  goalHours,
+  isActive,
+  startTime
 }: CircularProgressProps) => {
   const { hours, minutes, seconds } = useMemo(() => formatTime(elapsedTime), [elapsedTime]);
   const elapsedHours = elapsedTime / (1000 * 60 * 60);
   const [selectedMilestone, setSelectedMilestone] = useState<FastingMilestone | null>(null);
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
-  
+
+  // Calculate estimated end time
+  const estimatedEndTime = useMemo(() => {
+    if (!startTime || !isActive) return null;
+
+    const endTime = new Date(startTime + goalHours * 60 * 60 * 1000);
+    const now = new Date();
+
+    const isToday = endTime.toDateString() === now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isTomorrow = endTime.toDateString() === tomorrow.toDateString();
+
+    const timeStr = endTime.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    if (isToday) {
+      return `Goal at ${timeStr}`;
+    } else if (isTomorrow) {
+      return `Goal at ${timeStr} tomorrow`;
+    } else {
+      const dateStr = endTime.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+      return `Goal at ${timeStr}, ${dateStr}`;
+    }
+  }, [startTime, goalHours, isActive]);
+
   const radius = 130;
   const strokeWidth = 10;
   const normalizedRadius = radius - strokeWidth / 2;
@@ -57,19 +90,18 @@ export const CircularProgress = ({
     <>
       <div className="relative flex items-center justify-center">
         {/* Glow effect behind the circle - uses primary color */}
-        <div 
-          className={`absolute w-[280px] h-[280px] rounded-full transition-opacity duration-1000 ${
-            isActive ? 'opacity-100' : 'opacity-0'
-          }`}
+        <div
+          className={`absolute w-[280px] h-[280px] rounded-full transition-opacity duration-1000 ${isActive ? 'opacity-100' : 'opacity-0'
+            }`}
           style={{
             background: 'radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)',
             filter: 'blur(30px)',
           }}
         />
-        
+
         {/* Pulsing ring when active - uses primary color */}
         {isActive && (
-          <div 
+          <div
             className="absolute w-[270px] h-[270px] rounded-full border border-primary/30 animate-pulse-glow"
           />
         )}
@@ -88,7 +120,7 @@ export const CircularProgress = ({
             cx={radius}
             cy={radius}
           />
-          
+
           {/* Progress circle - uses primary/success color from theme */}
           <circle
             stroke={isCompleted ? "hsl(var(--success))" : "hsl(var(--primary))"}
@@ -96,7 +128,7 @@ export const CircularProgress = ({
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference + ' ' + circumference}
-            style={{ 
+            style={{
               strokeDashoffset,
               transition: 'stroke-dashoffset 1s ease-out, stroke 0.5s ease',
             }}
@@ -111,7 +143,7 @@ export const CircularProgress = ({
             const { x, y } = getMilestonePosition(milestone.hours);
             const isReached = elapsedHours >= milestone.hours;
             const color = getMilestoneColor(milestone.icon);
-            
+
             return (
               <g key={milestone.hours} transform={`rotate(90, ${radius}, ${radius})`}>
                 <circle
@@ -151,6 +183,11 @@ export const CircularProgress = ({
                   `of ${goalHours}h goal`
                 )}
               </p>
+              {!isCompleted && estimatedEndTime && (
+                <p className="mt-1 text-xs text-primary font-medium">
+                  {estimatedEndTime}
+                </p>
+              )}
               <p className="mt-1 text-xs text-muted-foreground/60">
                 Tap dots for info
               </p>
