@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Scale, Plus, TrendingDown, TrendingUp, Minus, ChevronRight } from 'lucide-react';
 import { formatDate } from '@/lib/time';
 import { WeightDetailView } from './WeightDetailView';
@@ -43,9 +43,9 @@ export const WeightTracker = ({ entries, onAddEntry, onUpdateEntry, onDeleteEntr
 
   const latestEntry = entries[0];
   const previousEntry = entries[1];
-  
-  const weightChange = latestEntry && previousEntry 
-    ? latestEntry.weight - previousEntry.weight 
+
+  const weightChange = latestEntry && previousEntry
+    ? latestEntry.weight - previousEntry.weight
     : null;
 
   const getTrendIcon = () => {
@@ -55,9 +55,51 @@ export const WeightTracker = ({ entries, onAddEntry, onUpdateEntry, onDeleteEntr
     return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
+  const handleLogClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(true);
+  };
+
   return (
     <>
-      <div 
+      {/* Log Weight Dialog - moved outside the clickable card */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Log Weight</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="weight">Weight (kg)</Label>
+              <Input
+                id="weight"
+                type="number"
+                step="0.1"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="e.g., 65.5"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="fatPercentage">Body Fat % (optional)</Label>
+              <Input
+                id="fatPercentage"
+                type="number"
+                step="0.1"
+                value={fatPercentage}
+                onChange={(e) => setFatPercentage(e.target.value)}
+                placeholder="e.g., 22.5"
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Save Entry
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <div
         className="glass rounded-xl p-4 cursor-pointer hover:bg-card/80 transition-colors active:scale-[0.98]"
         onClick={() => setDetailOpen(true)}
       >
@@ -67,47 +109,10 @@ export const WeightTracker = ({ entries, onAddEntry, onUpdateEntry, onDeleteEntr
             <h3 className="font-medium text-foreground">Weight Tracker</h3>
           </div>
           <div className="flex items-center gap-2">
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button variant="glass" size="sm" onClick={(e) => e.stopPropagation()}>
-                  <Plus className="w-4 h-4 mr-1" />
-                  Log
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border">
-                <DialogHeader>
-                  <DialogTitle>Log Weight</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="weight">Weight (kg)</Label>
-                    <Input
-                      id="weight"
-                      type="number"
-                      step="0.1"
-                      value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
-                      placeholder="e.g., 65.5"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="fatPercentage">Body Fat % (optional)</Label>
-                    <Input
-                      id="fatPercentage"
-                      type="number"
-                      step="0.1"
-                      value={fatPercentage}
-                      onChange={(e) => setFatPercentage(e.target.value)}
-                      placeholder="e.g., 22.5"
-                    />
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Save Entry
-                  </Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button variant="glass" size="sm" onClick={handleLogClick}>
+              <Plus className="w-4 h-4 mr-1" />
+              Log
+            </Button>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </div>
         </div>
@@ -146,7 +151,7 @@ export const WeightTracker = ({ entries, onAddEntry, onUpdateEntry, onDeleteEntr
         )}
       </div>
 
-      <WeightDetailView 
+      <WeightDetailView
         entries={entries}
         open={detailOpen}
         onOpenChange={setDetailOpen}
