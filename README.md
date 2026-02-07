@@ -38,7 +38,7 @@ A personal intermittent fasting tracker built with React, TypeScript, and Supaba
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/fast-circle-flow.git
+git clone https://github.com/Grace0d56/fast-circle-flow.git
 cd fast-circle-flow
 ```
 
