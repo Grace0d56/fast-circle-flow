@@ -45,7 +45,7 @@ const saveTheme = (theme: ThemeConfig) => {
 const applyTheme = (theme: ThemeConfig) => {
   const root = document.documentElement;
   const colorConfig = COLOR_OPTIONS.find(c => c.value === theme.color) || COLOR_OPTIONS[0];
-  
+
   if (theme.mode === 'light') {
     root.style.setProperty('--background', '0 0% 98%');
     root.style.setProperty('--foreground', '220 20% 10%');
@@ -73,12 +73,12 @@ const applyTheme = (theme: ThemeConfig) => {
     root.style.setProperty('--border', '220 18% 18%');
     root.style.setProperty('--input', '220 18% 18%');
   }
-  
+
   // Apply accent color
   root.style.setProperty('--primary', colorConfig.hsl);
   root.style.setProperty('--accent', colorConfig.hsl);
   root.style.setProperty('--ring', colorConfig.hsl);
-  
+
   // Update gradient
   root.style.setProperty('--gradient-primary', `linear-gradient(135deg, hsl(${colorConfig.hsl}) 0%, hsl(${colorConfig.hsl} / 0.7) 100%)`);
   root.style.setProperty('--shadow-glow', `0 0 60px hsl(${colorConfig.hsl} / 0.25)`);
@@ -109,7 +109,7 @@ export const ThemeSwitcher = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="absolute top-4 right-4">
+        <Button variant="ghost" size="icon">
           <Settings className="w-5 h-5" />
         </Button>
       </DialogTrigger>
@@ -117,7 +117,7 @@ export const ThemeSwitcher = () => {
         <DialogHeader>
           <DialogTitle>Theme Settings</DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6 pt-2">
           {/* Mode Toggle */}
           <div className="space-y-2">
@@ -153,18 +153,18 @@ export const ThemeSwitcher = () => {
                   key={colorOption.value}
                   onClick={() => setColor(colorOption.value)}
                   className="relative flex flex-col items-center gap-2 p-3 rounded-lg border border-border hover:border-primary transition-colors"
-                  style={{ 
-                    borderColor: theme.color === colorOption.value ? `hsl(${colorOption.hsl})` : undefined 
+                  style={{
+                    borderColor: theme.color === colorOption.value ? `hsl(${colorOption.hsl})` : undefined
                   }}
                 >
-                  <div 
+                  <div
                     className="w-8 h-8 rounded-full"
                     style={{ backgroundColor: `hsl(${colorOption.hsl})` }}
                   />
                   <span className="text-xs text-muted-foreground">{colorOption.label}</span>
                   {theme.color === colorOption.value && (
-                    <Check 
-                      className="absolute top-1 right-1 w-3 h-3" 
+                    <Check
+                      className="absolute top-1 right-1 w-3 h-3"
                       style={{ color: `hsl(${colorOption.hsl})` }}
                     />
                   )}

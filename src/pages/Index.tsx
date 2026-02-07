@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useFasting, MealType, ActivityLevel } from '@/hooks/useFasting';
+import { useAuth } from '@/hooks/useAuth';
 import { CircularProgress } from '@/components/CircularProgress';
 import { GoalInput } from '@/components/GoalInput';
 import { StatsView } from '@/components/StatsView';
@@ -19,6 +20,7 @@ const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; description: stri
 ];
 
 const Index = () => {
+  const { signOut } = useAuth();
   const {
     isActive,
     startTime,
@@ -67,8 +69,16 @@ const Index = () => {
       </Helmet>
 
       <main className="min-h-screen bg-background flex flex-col relative">
-        {/* Theme Switcher */}
-        <ThemeSwitcher />
+        {/* Theme Switcher & Sign Out */}
+        <div className="absolute top-4 right-4 flex items-center gap-1">
+          <ThemeSwitcher />
+          <button
+            onClick={signOut}
+            className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
+          >
+            Sign Out
+          </button>
+        </div>
 
         {/* Header */}
         <header className="pt-safe px-4 py-4">
