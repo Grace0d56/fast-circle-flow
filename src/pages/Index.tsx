@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useFasting } from '@/hooks/useFasting';
+import { useFasting, MealType, ActivityLevel } from '@/hooks/useFasting';
 import { CircularProgress } from '@/components/CircularProgress';
 import { GoalInput } from '@/components/GoalInput';
 import { StatsView } from '@/components/StatsView';
 import { FastingHistory } from '@/components/FastingHistory';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Square, Timer, BarChart3, History } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Square, Timer, BarChart3, History, Sofa, Footprints, Bike, Flame } from 'lucide-react';
+
+const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; description: string; icon: React.ReactNode }[] = [
+  { value: 'sedentary', label: 'Sedentary', description: 'Mostly sitting, minimal movement', icon: <Sofa className="w-5 h-5" /> },
+  { value: 'light', label: 'Light', description: 'Some walking, light chores', icon: <Footprints className="w-5 h-5" /> },
+  { value: 'moderate', label: 'Moderate', description: 'Regular walking, active work', icon: <Bike className="w-5 h-5" /> },
+  { value: 'high', label: 'High', description: 'Exercise, physical labor', icon: <Flame className="w-5 h-5" /> },
+];
 
 const Index = () => {
   const {
@@ -31,19 +38,21 @@ const Index = () => {
     clearWeightEntries,
   } = useFasting();
 
-  const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
+  const [stopDialogOpen, setStopDialogOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityLevel>('sedentary');
 
   const handleStopClick = () => {
-    setStopConfirmOpen(true);
+    setSelectedActivity('sedentary');
+    setStopDialogOpen(true);
   };
 
   const handleConfirmStop = () => {
-    stopFasting();
-    setStopConfirmOpen(false);
+    stopFasting(selectedActivity);
+    setStopDialogOpen(false);
   };
 
-  const handleStartFasting = (goal: number, lastMealTime: Date) => {
-    startFasting(goal, lastMealTime);
+  const handleStartFasting = (goal: number, lastMealTime: Date, lastMealType: MealType) => {
+    startFasting(goal, lastMealTime, lastMealType);
   };
 
   return (
@@ -161,6 +170,7 @@ const Index = () => {
             <TabsContent value="history" className="flex-1 mt-0 overflow-auto -mx-1 px-1">
               <FastingHistory
                 sessions={sessions}
+                weightEntries={weightEntries}
                 onUpdateSession={updateSession}
                 onDeleteSession={deleteSession}
               />
@@ -169,16 +179,60 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Stop Confirmation Dialog */}
-      <ConfirmDialog
-        open={stopConfirmOpen}
-        onOpenChange={setStopConfirmOpen}
-        title="End Fast?"
-        description="Are you sure you want to end your current fast? This action cannot be undone."
-        confirmText="Yes, End Fast"
-        variant="destructive"
-        onConfirm={handleConfirmStop}
-      />
+      {/* End Fast Dialog with Activity Level Selection */}
+      <Dialog open={stopDialogOpen} onOpenChange={setStopDialogOpen}>
+        <DialogContent className="bg-card border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle>End Fast</DialogTitle>
+            <DialogDescription>
+              How active were you during this fast?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            {ACTIVITY_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedActivity(option.value)}
+                className={`w-full p-3 rounded-lg border text-left transition-all flex items-center gap-3 ${selectedActivity === option.value
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border bg-card hover:border-primary/50'
+                  }`}
+              >
+                <div className={`${selectedActivity === option.value ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {option.icon}
+                </div>
+                <div>
+                  <span className={`block text-sm font-medium ${selectedActivity === option.value ? 'text-primary' : 'text-foreground'}`}>
+                    {option.label}
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {option.description}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="glass"
+              onClick={() => setStopDialogOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmStop}
+              className="flex-1"
+            >
+              End Fast
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

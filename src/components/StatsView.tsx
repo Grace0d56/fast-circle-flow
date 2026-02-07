@@ -95,6 +95,16 @@ export const StatsView = ({
     fatBurnOptions
   );
 
+  // Format fat burned display
+  const formatFatBurned = () => {
+    const lower = Math.round(totalFatBurned.lower);
+    const upper = Math.round(totalFatBurned.upper);
+
+    if (lower === 0 && upper === 0) return '0g';
+    if (lower === upper) return `~${lower}g`;
+    return `~${lower}-${upper}g`;
+  };
+
   const periods: { value: Period; label: string }[] = [
     { value: 'week', label: 'Week' },
     { value: 'month', label: 'Month' },
@@ -136,8 +146,8 @@ export const StatsView = ({
     {
       icon: Scale,
       label: 'Fat Burned',
-      value: `~${Math.round(totalFatBurned)}g`,
-      subValue: 'estimated total',
+      value: formatFatBurned(),
+      subValue: 'estimated (conservative)',
       color: 'text-warning'
     },
   ];

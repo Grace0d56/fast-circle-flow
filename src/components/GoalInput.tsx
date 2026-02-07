@@ -2,17 +2,25 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Clock, Target } from 'lucide-react';
+import { Clock, Target, Utensils } from 'lucide-react';
+import { MealType } from '@/hooks/useFasting';
 
 interface GoalInputProps {
-  onStart: (goalHours: number, lastMealTime: Date) => void;
+  onStart: (goalHours: number, lastMealTime: Date, lastMealType: MealType) => void;
   disabled?: boolean;
 }
+
+const MEAL_OPTIONS: { value: MealType; label: string; description: string }[] = [
+  { value: 'light', label: 'Light', description: 'Salad, snack, small portion' },
+  { value: 'normal', label: 'Normal', description: 'Regular balanced meal' },
+  { value: 'heavy', label: 'Heavy', description: 'Large, high carb/fat meal' },
+];
 
 export const GoalInput = ({ onStart, disabled }: GoalInputProps) => {
   const [goalHours, setGoalHours] = useState('16');
   const [lastMealDate, setLastMealDate] = useState('');
   const [lastMealTime, setLastMealTime] = useState('');
+  const [lastMealType, setLastMealType] = useState<MealType>('normal');
 
   // Set default to now
   useEffect(() => {
@@ -26,28 +34,28 @@ export const GoalInput = ({ onStart, disabled }: GoalInputProps) => {
   const handleStart = () => {
     const goal = parseFloat(goalHours);
     if (isNaN(goal) || goal <= 0 || goal > 168) return;
-    
+
     const mealTime = new Date(`${lastMealDate}T${lastMealTime}`);
     if (isNaN(mealTime.getTime())) return;
-    
-    onStart(goal, mealTime);
+
+    onStart(goal, mealTime, lastMealType);
   };
 
   const isValid = () => {
     const goal = parseFloat(goalHours);
     if (isNaN(goal) || goal <= 0 || goal > 168) return false;
-    
+
     const mealTime = new Date(`${lastMealDate}T${lastMealTime}`);
     if (isNaN(mealTime.getTime())) return false;
     if (mealTime > new Date()) return false;
-    
+
     return true;
   };
 
   return (
     <div className="w-full space-y-4">
       <p className="text-sm text-muted-foreground text-center">Configure your fast</p>
-      
+
       <div className="glass rounded-xl p-4 space-y-4">
         {/* Goal Hours */}
         <div className="space-y-2">
@@ -99,6 +107,33 @@ export const GoalInput = ({ onStart, disabled }: GoalInputProps) => {
           <p className="text-xs text-muted-foreground text-center">
             When did you finish your last meal?
           </p>
+        </div>
+
+        {/* Last Meal Type */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <Utensils className="w-4 h-4 text-primary" />
+            Last Meal Size
+          </Label>
+          <div className="grid grid-cols-3 gap-2">
+            {MEAL_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setLastMealType(option.value)}
+                disabled={disabled}
+                className={`p-2 rounded-lg border text-center transition-all ${lastMealType === option.value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-card hover:border-primary/50'
+                  }`}
+              >
+                <span className="block text-sm font-medium">{option.label}</span>
+                <span className="block text-xs text-muted-foreground mt-0.5">
+                  {option.description}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

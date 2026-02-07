@@ -3,14 +3,16 @@ import { FastingSession } from '@/hooks/useFasting';
 import { formatDate, formatTimeOfDay, formatDuration } from '@/lib/time';
 import { SessionDetail } from '@/components/SessionDetail';
 import { Check, X, ChevronRight } from 'lucide-react';
+import { WeightEntry } from './WeightTracker';
 
 interface FastingHistoryProps {
   sessions: FastingSession[];
+  weightEntries?: WeightEntry[];
   onUpdateSession?: (sessionId: string, updates: Partial<Omit<FastingSession, 'id'>>) => void;
   onDeleteSession?: (sessionId: string) => void;
 }
 
-export const FastingHistory = ({ sessions, onUpdateSession, onDeleteSession }: FastingHistoryProps) => {
+export const FastingHistory = ({ sessions, weightEntries, onUpdateSession, onDeleteSession }: FastingHistoryProps) => {
   const [selectedSession, setSelectedSession] = useState<FastingSession | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
@@ -18,6 +20,9 @@ export const FastingHistory = ({ sessions, onUpdateSession, onDeleteSession }: F
     setSelectedSession(session);
     setDetailOpen(true);
   };
+
+  // Get latest weight for fat estimation
+  const latestWeight = weightEntries?.[0];
 
   if (sessions.length === 0) {
     return (
@@ -33,7 +38,7 @@ export const FastingHistory = ({ sessions, onUpdateSession, onDeleteSession }: F
       <div className="space-y-2">
         {sessions.slice(0, 30).map((session) => {
           const duration = session.endTime! - session.startTime;
-          
+
           return (
             <div
               key={session.id}
@@ -76,6 +81,7 @@ export const FastingHistory = ({ sessions, onUpdateSession, onDeleteSession }: F
         onOpenChange={setDetailOpen}
         onUpdate={onUpdateSession}
         onDelete={onDeleteSession}
+        latestWeight={latestWeight ? { weight: latestWeight.weight, fatPercentage: latestWeight.fatPercentage } : undefined}
       />
     </>
   );
